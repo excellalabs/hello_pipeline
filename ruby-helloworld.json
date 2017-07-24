@@ -1,0 +1,153 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Task Definition for hello world app",
+  "Parameters": {
+    "Environment": {
+      "Type": "String",
+      "Description": "Environment for ecs task",
+      "Default": "Test"
+    },
+    "ContainerImage": {
+      "Type": "String",
+      "Description": "Image to Deploy",
+      "Default": "090999229429.dkr.ecr.us-east-2.amazonaws.com/hello_world-ruby:latest"
+    },
+    "TaskAmount": {
+      "Type": "Number",
+      "Description": "Number of Tasks to Deploy",
+      "Default": "1"
+    }
+  },
+  "Resources": {
+    "HelloWorldELB": {
+      "Properties": {
+        "Subnets": [
+          {
+            "Fn::ImportValue" : "PubSub1Id"
+          },
+          {
+            "Fn::ImportValue" : "PubSub2Id"
+          }
+        ],
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Ref": "ElbClusterSecurityGroup"
+          },
+          {
+            "Fn::ImportValue": "ECSClusterSecurityGroup"
+          }
+        ]
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    },
+    "HelloWorldELBListener": {
+      "Properties": {
+        "LoadBalancerArn": {
+          "Ref": "HelloWorldELB"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "DefaultActions": [
+          {"Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "HelloWorldELBTargetGroup"
+            }
+          }
+        ],
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::Listener"
+    },
+    "HelloWorldELBTargetGroup": {
+      "Properties": {
+        "VpcId": {
+          "Fn::ImportValue" : "VPCId"
+        },
+        "Port": 80,
+        "Protocol": "HTTP"
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "DependsOn": "HelloWorldELB"
+    },
+    "ElbClusterSecurityGroup": {
+      "Properties": {
+        "VpcId": {
+          "Fn::ImportValue" : "VPCId"
+        },
+        "GroupDescription": "Hello World Elb security group",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    },
+"HelloWorldECSService": {
+  "DependsOn": "HelloWorldELBListener",
+  "Properties": {
+    "Cluster": {
+      "Fn::ImportValue" : "ECSClusterName"
+    },
+    "DesiredCount": {
+      "Ref": "TaskAmount"
+    },
+    "LoadBalancers": [
+      {
+        "ContainerName": "ruby-helloworld",
+        "ContainerPort": "80",
+        "TargetGroupArn": {
+          "Ref": "HelloWorldELBTargetGroup"
+        }
+      }
+    ],
+    "TaskDefinition": {
+      "Ref": "RubyHelloWorldTaskDefinition"
+    },
+    "Role": {
+      "Fn::ImportValue" : "ECSServiceRole"
+    }
+  },
+  "Type": "AWS::ECS::Service"
+},
+"RubyHelloWorldTaskDefinition": {
+  "Properties": {
+    "ContainerDefinitions": [
+      {
+        "Name": "ruby-helloworld",
+        "Image": {
+          "Ref": "ContainerImage"
+        },
+        "Hostname": "ruby-helloworld",
+        "Cpu": 512,
+        "Memory": 1024,
+        "Essential": true,
+        "PortMappings": [
+          {
+            "HostPort": 80,
+            "ContainerPort": 80
+          }
+        ]
+      }
+    ]},
+  "Type": "AWS::ECS::TaskDefinition"
+}},
+"Outputs": {
+  "ELBURL": {
+    "Description": "Public DNS of ELB",
+    "Value": {
+        "Fn::Join": ["", [
+            "http://",
+            {
+                "Fn::GetAtt" : ["HelloWorldELB", "DNSName"]
+            },
+      "/"
+        ]
+        ]
+    }
+  }
+}
+}

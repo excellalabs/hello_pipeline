@@ -1,0 +1,15 @@
+[
+  {
+    "name": "app_container",
+    "image": "drone/drone:0.7",
+    "cpu": 2,
+    "memory": 512,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 80,
+        "hostPort": 80
+      }
+    ]
+  }
+]
