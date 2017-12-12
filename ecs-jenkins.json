@@ -1047,6 +1047,20 @@
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
+    "JenkinsLogGroup": {
+      "Properties": {
+        "LogGroupName": "ecs-jenkins"
+      },
+      "Type": "AWS::Logs::LogGroup"
+    },
+    "JenkinsLogStreamPrefix": {
+      "Type": "AWS::Logs::LogStream",
+      "DependsOn": "JenkinsLogGroup",
+      "Properties": {
+        "LogGroupName": "ecs-jenkins",
+        "LogStreamName": "jenkins"
+      }
+    },
     "Jenkins2ECSService": {
       "DependsOn": "JenkinsLogStreamPrefix",
       "Properties": {
@@ -1071,19 +1085,6 @@
         }
       },
       "Type": "AWS::ECS::Service"
-    },
-    "JenkinsLogGroup": {
-      "Properties": {
-        "LogGroupName": "ecs-jenkins"
-      },
-      "Type": "AWS::Logs::LogGroup"
-    },
-    "JenkinsLogStreamPrefix": {
-      "Type": "AWS::Logs::LogStream",
-      "Properties": {
-        "LogGroupName": "ecs-jenkins",
-        "LogStreamName": "jenkins"
-      }
     },
     "JenkinsTaskDefinition": {
       "Properties": {
